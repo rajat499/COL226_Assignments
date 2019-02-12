@@ -841,7 +841,7 @@ let
                           )              
                         else
                           (
-                              (*Ocaml's Older version doesn't except int_of_string(\"+45\"), therefore handling that by ignoring first character if it is '+'. "*)
+                              (*Ocaml's Older version doesn't except int_of_string("+45"), therefore handling that by ignoring first character if it is '+'.*)
                               lastExp := "Integer";
                               if(s.[0]='+') then (INT(int_of_string (String.sub s 1 ((String.length s) -1)))::(classifyToken lexbuf))
                               else (INT(int_of_string(s)) :: (classifyToken lexbuf))                          
