@@ -1,0 +1,161 @@
+Lemma 1- Size(t) >= 1, where t is of type exptree
+Proof- By the definition of size.
+       
+       t can have form
+
+        Type                          Size
+       N(i)                            1
+    Minus(t1, t2)              1+size(t1)+size(t2)
+    Plus(t1, t2)               1+size(t1)+size(t2)
+    Mult(t1, t2)               1+size(t1)+size(t2)
+    Div(t1, t2)                1+size(t1)+size(t2)
+    Rem(t1, t2)                1+size(t1)+size(t2)
+    Abs(t1)                    1+size(t1)
+    Nega(t1)                    1+size(t1)
+
+    In all the case stated above size(t) >= 1 , since size of any subtree  can't be negative.
+
+Lemma 2 - (Compile t) gives correct postorder traversal of t.
+Proof- By induction on size of t.
+       Induction Hypothesis - For all exp t1, such that size(t1)<=k,
+       compile(t1) gives correct postorder traversal.
+
+       Base Case- For Size(t1) = 1. Lemma1 deduces that t1 is of form N(i)
+                   Since all other form will have size > 1. If t1 is of any other form then
+                   it's size would be (1 + size of it's subtrees) and it's subtrees will also 
+                   have size > 1. So in Base Case t1 is of form N(i).
+
+                   In this case compile(t1) = [CONST(mk_big i)], which is correct postorder traversal.
+       
+       
+       Induction Case - For exptree 't' of size (k+1), where k>0 so size (t) >1,
+                        t can have all other forms except N(i) since size(N(i)) = 1, by the type of t
+                        stated in Lemma 1
+
+                        If t is of form Plus(t1, t2)
+                        => size(t) = 1 + size(t1) + size(t2) = k + 1
+                        => size(t1) + size (t2) = k
+                        => size(t1) <= k and size(t2) <= k (since size(t1) >= 1 and size(t2) >= 1 [Lemma 1])
+
+
+                        By Induction Hypothesis, compile(t1) gives correct postorder traversal of t1, because size(t1) <= k
+                                            and, compile(t2) gives correct postorder traversal of t1, because size(t2) <= k
+
+                        compile(t) = compile(t1) @ compile (t2) @ PLUS.
+
+                        is correct since it give postorder traversal of t, and since it's subtrees are compiled correctly,
+                        it will also be compiled in correct sense.
+
+                        Similarly, Without Loss of Generality, it can be shown that if t is of form 
+                        Mult(t1, t2) or Minus(t1, t2) or Div(t1, t2) or Rem(t1, t2), then also this Lemma holds.
+
+                        When t is of form Abs(t1) then
+                        => size(t) = 1 + size(t1) = k + 1
+                        => size(t1) = k
+                        By Induction Hypothesis, compile(t1) gives correct postorder traversal of t1, because size(t1) <= k
+
+
+                        compile(t) = compile(t1) @ PLUS.
+
+                        is correct since it give postorder traversal of t, and since it's subtree is compiled correctly,
+                        it will also be compiled in correct sense.
+
+                        Similarly, Without Loss of Generality, it can be shown that if t is of form 
+                        Nega(t1), then also this Lemma holds.
+
+
+
+Theorem- (stackmc b_list (compile t)) returns a bigint whose value is equal to (eval t), where t is of type exptree.
+
+To Prove -> eval(t) ≡ (stackmc b_list (compile t)) , where t is of type exptree.
+
+Proof- By induction on size of t.
+
+       Induction Hypothesis - For all exp t1, such that size(t1)<=k,
+                              eval(t1) ≡ (stackmc b_list (compile t1))
+
+       Base Case - For Size(t1) = 1. Lemma1 deduces that t1 is of form N(i)
+                   Since all other form will have size > 1. If t1 is of any other form then
+                   it's size would be (1 + size of it's subtrees) and it's subtrees will also 
+                   have size > 1. So in Base Case t1 is of form N(i).
+
+                   In this case eval(t1) = i, and
+                   compile(t1) = [CONST(mk_big i)], so,
+                   stackmc b_list compile(t1) = (mk_big i)
+
+                   (mk_big i) is bigint form of i and hence their representation are different
+                   but their values are same.
+                   
+                   Since, i ≡ (mk_big i), so,
+                   eval(t1) ≡ (stackmc b_list (compile t1)).
+       
+       
+       Induction Case - For exptree 't' of size (k+1), where k>0 so size (t) >1,
+                        t can have all other forms except N(i) since size(N(i)) = 1, by the type of t
+                        stated in Lemma 1
+
+                        If t is of form Plus(t1, t2)
+                        => size(t) = 1 + size(t1) + size(t2) = k + 1
+                        => size(t1) + size (t2) = k
+                        => size(t1) <= k and size(t2) <= k (since size(t1) >= 1 and size(t2) >= 1 [Lemma 1])
+                        eval(t) = eval(t1) + eval(t2).
+                        compile(t) = compile(t1) @ compile (t2) @ PLUS.
+
+                        (stackmc b_list (compile(t))) will first work on compile (t1).
+
+                        By Induction Hypothesis, eval(t1) ≡ (stackmc b_list (compile t1)) because size(t1) <= k
+                                            and, eval(t2) ≡ (stackmc b_list (compile t2)) because size(t2) <= k
+
+                        so by the time (stackmc b_list (compile(t))) consumes compile (t1) part, it will
+                        push the result(say r1) of (stackmc b_list (compile t1)) on the stack.
+                        And after consuming (compile t2) part of opcode list, the result(say r2) of
+                        (stackmc b_list (compile t2)) will also be pushed on the stack.
+
+                        After hitting PLUS in the opcode list, it will first pop r2 from stack and then 
+                        also pop r1 from stack. Now (add r1 r2) will be called and the result of (add r1 r2)
+                        will be pushed back into the stack. The top of the stack(or head of b_list) is 
+                        always the final result. And so in this case, (add r1 r2) will be final result.
+
+                        we have already shown by induction hypotheis that r1 ≡ (eval t1) and (r2 ≡ eval t2)
+                        Also, add function in bigint package is equivalent of '+' operator in ocaml.
+                        So (add r1 r2) ≡ (eval t1) + (eval t2).
+                        Thus finally, (stackmc b_list (compile t)) ≡ eval(t).
+
+
+                        Similarly, Without Loss of Generality, it can be shown that if t is of form 
+                        Mult(t1, t2) or Minus(t1, t2) or Div(t1, t2) or Rem(t1, t2), then also this theorem holds.
+
+                        When t is of form Abs(t1) then
+                        => size(t) = 1 + size(t1) = k + 1
+                        => size(t1) = k
+                        eval(t) = absolute value of eval(t1).
+                        compile(t) = compile(t1) @ ABS.
+
+                        (stackmc b_list (compile(t))) will first work on compile (t1).
+
+                        By Induction Hypothesis, eval(t1) ≡ (stackmc b_list (compile t1)) because size(t1) <= k
+
+                        so by the time (stackmc b_list (compile(t))) consumes compile (t1) part, it will
+                        push the result(say r) of (stackmc b_list (compile t1)) on the stack.
+
+                        After hitting ABS in the opcode list, it will first pop r from stack.
+                        Now (abs r) will be called and the result of (abs r) will be pushed back 
+                        into the stack. The top of the stack(or head of b_list) is always the 
+                        final result. And so in this case, (abs r) will be final result.
+
+                        we have already shown by induction hypotheis that r ≡ (eval t1)
+                        Also, abs function in bigint package is equivalent of Pervasives.abs 
+                        function in ocaml, which returns absolute value of an int.
+                        So (abs r) ≡ absolute value of eval(t1).
+                        Thus finally, (stackmc b_list (compile t)) ≡ eval(t).
+
+
+                        Similarly, Without Loss of Generality, it can be shown that if t is of form 
+                        Nega(t1), then also this theorem holds.
+
+        
+Hence Proved that whatever form t is of result of (eval t) is equal to value of bigint returned by compiler + stackmc.
+
+Note- In the theorem it has been stated that t is of type exptree, and hence it will be a complete tree, and thus the
+      opcode list sent by compile function won't be ill-formed.
+

@@ -1,0 +1,5 @@
+#directory "_build";; (* Consider this folder when looking for files *)
+#load "a0.cmo";; (* Load the a0 bytecode *)
+#load "a1.cmo";;
+open A0;;                   (* import the defination of module A0 into current namespace *)
+open A1;;
