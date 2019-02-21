@@ -297,7 +297,7 @@ Exception: InvalidToken '#'.
 - : token list = [IF; LP; ID "a"; EQ; INT 5; AND; ID "b"; EQ; INT 10; RP]
 
 # scanner ">>>>>>>=<=<<<<<<<= =";;
-- : token list =                                                                                         [GTA; GTA; GTA; GTA; GTA; GTA; GEQ; LEQ; LTA; LTA; LTA; LTA; LTA; LTA; LEQ; EQ]
+- : token list = [GTA; GTA; GTA; GTA; GTA; GTA; GEQ; LEQ; LTA; LTA; LTA; LTA; LTA; LTA; LEQ; EQ]
 
 # scanner "a>5";;
 - : token list = [ID "a"; GTA; INT 5]
