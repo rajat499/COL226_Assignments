@@ -26,10 +26,9 @@ let rec convert_to_string l = match l with
                     |    hd :: tl -> (string_of_int hd) ^ (convert_to_string tl);;
 
 let print_num bigN = match bigN with
-                    (Neg, l) -> "-" ^ (convert_to_string l) 
+                    (_, []) -> "0"
+                  | (Neg, l) -> "-" ^ (convert_to_string l) 
                   | (NonNeg, l) -> (convert_to_string l);;
-
-
 
 (*Converting Bigint to Ocaml's int type. Firstly evaluate the list and then add the sign
 ===== Warning - It may lead to loss of data if bigint is out of range of Ocaml's int =====

@@ -30,7 +30,8 @@ let rec convert_to_string l = match l with
                     |    hd :: tl -> (string_of_int hd) ^ (convert_to_string tl);;
 
 let print_num bigN = match bigN with
-                    (Neg, l) -> "-" ^ (convert_to_string l) 
+                    (_, []) -> "0"
+                  | (Neg, l) -> "-" ^ (convert_to_string l) 
                   | (NonNeg, l) -> (convert_to_string l);;
 
 
