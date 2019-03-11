@@ -2,10 +2,18 @@
     open A1
 %}
 
+/*
+- Tokens (token name and rules) are modified wrt to A2. Please make necessary changes in A3
+- LP and RP are left and right parenthesis
+- Write grammar rules to recognize
+  - >= <= from GT EQ LT tokens
+  - if then else fi
+*/
 /* Tokens are defined below.  */
-%token TRUE FALSE ABS PLUS MINUS MUL DIV MOD EXP LP RP NOT AND OR EQ GTA LTA GEQ LEQ IF THEN ELSE DEF DELIMITER EOF COMMA PROJ FI NEGA COMMA
 %token <int> INT
+%token <bool> BOOL
 %token <string> ID
+%token ABS TILDA NOT PLUS MINUS TIMES DIV REM CONJ DISJ EQ GT LT LP RP IF THEN ELSE FI COMMA PROJ EOF DEF DELIMITER
 %start main
 %type <A1.exptree> main /* Return type */
 %%

@@ -48,6 +48,12 @@ exception IllegalOperationOnWrongOperand
 exception IllegalProjection
 exception IllegalTuple
 
+(*Gives xth member of a list. Head of the list is first member*)
+let rec evaluateProj list x =( match x with
+                               0 -> raise IllegalProjection
+                              |1 -> List.hd list
+                              |_ -> evaluateProj (List.tl list) (x-1))
+
 let rec eval ex rho = match ex with
                       Var(s)        -> rho s
                     | N(i)          -> Num(mk_big i)
@@ -145,23 +151,20 @@ let rec eval ex rho = match ex with
 
                     | IfThenElse(t1, t2, t3) -> let a = eval t1 rho in
                                                 if a=Bool(true) then eval t2 rho
-                                                else eval t3 rho
+                                                else if a=Bool(false) then eval t3 rho
+                                                else raise IllegalOperationOnWrongOperand
                     
                     | Tuple(n, list)      -> let rec evaluateTuple l =(match l with
                                                                       [] -> []
                                                                     | hd::tl -> (eval hd rho) :: (evaluateTuple tl))
                                              in
-                                             Tup(n, evaluateTuple list)
+
+                                             let x = evaluateTuple list in
+                                             if (n= (List.length x)) then  Tup(n, x) else raise IllegalOperationOnWrongOperand
+
 
                     | Project((i,n),t)    -> if(i<=0 || i>n) then raise IllegalProjection
                                              else
-                                             
-                                             (*Gives xth member of a list. Head of the list is first member*)
-                                             let rec evaluateProj list x =( match x with
-                                                                            0 -> raise IllegalProjection
-                                                                            |1 -> List.hd list
-                                                                            |_ -> evaluateProj (List.tl list) (x-1))
-                                             in
 
                                              let x = eval t rho in
 
@@ -199,22 +202,174 @@ let rec compile ex = match ex with
                                             (compileTuple list) @ [TUPLE(n)]
                     | Project((i,n),t)   -> (compile t) @ [PROJ(i,n)]                       
 
-exception EmptyStackCan'tPop;;
-exception EmptyStackNothingToPeek;;
+exception EmptyStackCan'tPop
+exception EmptyStackNothingToPeek
 
 (*Pops head of the stack and returns the remaining stack.*)
 let pop_stack list = match list with 
                 [] -> raise EmptyStackCan'tPop
               | hd :: tl -> tl
-              ;;
+              
 
 (*Returns the head/top of the stack.*)
 let peek_stack list = match list with
                 [] -> raise EmptyStackNothingToPeek
               | hd :: tl -> hd
-              ;;
+              
 (*Pushes the element on top of the stack.*)
-let push_stack element list = element :: list ;;
+let push_stack element list = element :: list 
 
+exception IllegalOperationOnWrongOperandInStack
 
-let rec stackmc stk rho pgm = raise Not_implemented
+let abs_stack stk = let a = peek_stack stk in
+                    (match a with
+                      Num(i) -> (push_stack (Num(abs i)) (pop_stack stk))
+                     | _ -> raise IllegalOperationOnWrongOperandInStack)
+
+let unary_minus_stack stk = let a = peek_stack stk in
+                            (match a with
+                             Num(i) -> (push_stack (Num(minus i)) (pop_stack stk))
+                            | _ -> raise IllegalOperationOnWrongOperandInStack)
+                     
+let not_stack stk = let a = peek_stack stk in
+                    (match a with
+                     Bool(b) -> (push_stack (if b=true then Bool(false) else Bool(true)) (pop_stack stk))
+                     | _ -> raise IllegalOperationOnWrongOperandInStack)
+
+let add_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Num(add b1 b2)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let sub_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Num(sub b2 b1)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let mult_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Num(mult b1 b2)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let div_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Num(div b2 b1)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let rem_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Num(rem b2 b1)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let conj_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Bool(b1),Bool(b2)) -> (push_stack (Bool(b1 && b2)) (pop_stack b_stk))
+                    | _                  -> raise IllegalOperationOnWrongOperandInStack)
+
+let disj_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Bool(b1),Bool(b2)) -> (push_stack (Bool(b1 || b2)) (pop_stack b_stk))
+                    | _                  -> raise IllegalOperationOnWrongOperandInStack)
+
+let eq_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Bool(eq b1 b2)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let gte_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Bool(geq b2 b1)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let lte_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Bool(leq b2 b1)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let gt_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Bool(gt b2 b1)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let lt_stack stk = let b_stk = pop_stack stk in
+                    let x = peek_stack stk in
+                    let y = peek_stack b_stk in
+                    (match(x,y) with
+                     (Num(b1),Num(b2)) -> (push_stack (Bool(lt b2 b1)) (pop_stack b_stk))
+                    | _                -> raise IllegalOperationOnWrongOperandInStack)
+
+let ifte_stack stk = let b_stk = pop_stack stk in
+                     let c_stk = pop_stack b_stk in
+                     let c = peek_stack c_stk in
+
+                     if c=Bool(true) then (push_stack (peek_stack b_stk) (pop_stack c_stk))
+                     else if c=Bool(false) then (push_stack (peek_stack stk) (pop_stack c_stk))
+                     else raise IllegalOperationOnWrongOperandInStack
+
+let proj_stack stk i n = let x = (peek_stack stk) in
+                         (match x with
+                          Tup(a,e) -> if a=n then (push_stack (evaluateProj e i) (pop_stack stk)) 
+                                      else raise IllegalTuple
+                         | _       -> raise IllegalProjection)
+
+let rec tuple_stack stk n = if (n<0) then raise IllegalTuple 
+                        else
+                        (match n with
+                          0 -> ([],stk)
+                        | n -> let (x,y) = (tuple_stack (pop_stack stk) (n-1)) in 
+                               ((peek_stack stk) :: x, y ))
+
+exception StackEmpty
+exception IllegalOpCodeList_StackContainsMoreThanOneElement
+
+let rec stackmc stk rho pgm = match pgm with
+                               [] -> (match stk with
+                                      []       -> raise StackEmpty
+                                      | hd::tl -> if tl=[] then hd else raise IllegalOpCodeList_StackContainsMoreThanOneElement)
+
+                              | hd :: tl -> (match hd with
+                                              VAR(s)    -> (stackmc ((rho s)::stk) rho tl)
+                                            | NCONST(i) -> (stackmc (Num(i)::stk) rho tl)
+                                            | BCONST(b) -> (stackmc (Bool(b)::stk) rho tl)
+                                            | ABS       -> (stackmc (abs_stack stk) rho tl)
+                                            | UNARYMINUS-> (stackmc (unary_minus_stack stk) rho tl)
+                                            | NOT       -> (stackmc (not_stack stk) rho tl)
+                                            | PLUS      -> (stackmc (add_stack stk) rho tl)
+                                            | MINUS     -> (stackmc (sub_stack stk) rho tl)
+                                            | MULT      -> (stackmc (mult_stack stk) rho tl)
+                                            | DIV       -> (stackmc (div_stack stk) rho tl)
+                                            | REM       -> (stackmc (rem_stack stk) rho tl)
+                                            | CONJ      -> (stackmc (conj_stack stk) rho tl)
+                                            | DISJ      -> (stackmc (disj_stack stk) rho tl)
+                                            | EQS       -> (stackmc (eq_stack stk) rho tl)
+                                            | GTE       -> (stackmc (gte_stack stk) rho tl)
+                                            | LTE       -> (stackmc (lte_stack stk) rho tl)
+                                            | GT        -> (stackmc (gt_stack stk) rho tl)
+                                            | LT        -> (stackmc (lt_stack stk) rho tl)
+                                            | PAREN     -> (stackmc (stk) rho tl)
+                                            | IFTE      -> (stackmc (ifte_stack stk) rho tl)
+                                            | TUPLE(n)  -> let (x,y) = (tuple_stack stk n) in (stackmc (Tup(n,List.rev x)::y) rho tl)
+                                            | PROJ(i,n) -> (stackmc (proj_stack stk i n) rho tl)
+                                            )

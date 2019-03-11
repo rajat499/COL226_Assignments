@@ -34,31 +34,31 @@ let whitespace = [' ' '\t' '\n']+
 
 rule read = parse
    eof             {EOF}
-   | 'T'           {TRUE}
-   | 'F'           {FALSE}
+   | 'T'           {BOOL(true)}
+   | 'F'           {BOOL(false)}
    | "abs"         {ABS}
+   | "proj"        {PROJ}
    | ','           {COMMA}
    | '+'           {PLUS}
    | '-'           {MINUS}
-   | '*'           {MUL}
+   | '*'           {TIMES}
    | "div"         {DIV}
-   | "mod"         {MOD}
+   | "mod"         {REM}
    | '^'           {EXP}
    | '('           {LP}
-   | '~'           {NEGA}
+   | '~'           {TILDA}
    | ')'           {RP}
    | "not"         {NOT}
-   | "/\\"         {AND}
-   | "\\/"         {OR}
+   | "/\\"         {CONJ}
+   | "\\/"         {DISJ}
    | '='           {EQ}
-   | '>'           {GTA}
-   | '<'           {LTA}
-   | ">="          {GEQ}
+   | '>'           {GT}
+   | '<'           {LT}
    | "if"          {IF}
    | "then"        {THEN}
    | "else"        {ELSE}
    | "def"         {DEF}
-   | ";"           {DELIMITER}
+   | "$"           {DELIMITER}
    | "fi"          {FI}
    | id as x       {ID(x)}
    | integer as n  { INT (int_of_string n) }
