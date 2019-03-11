@@ -1,0 +1,27 @@
+A3: Submission guidelines
+
+Please read the instructions carefully. Submissions which do not abide by the guidelines will not be graded.
+
+WHAT TO SUBMIT
+A <entrynumber>.zip file containing the following
+- a0.ml
+- a1.ml
+- a2.mll
+- a3.mly
+Unzipping should create a folder with same name. Entry number should be in lowercase.
+DO NOT submit *.cmo, *.cmi, *.out, _build/ etc.
+
+HOW TO RUN:
+Run on terminal
+	ocamlbuild a0.cmo a1.cmo a2.cmo a3.cmo
+	ocaml test_a3.ml
+
+Clean up
+	rm -rf _build
+
+GRADING CRITERIA:
+Correctness
+Efficiency
+Code readability, comments etc
+
+Any issues please post ONLY on Piazza. No emails will be entertained. You are encouraged to ask and answer questions on Piazza.
