@@ -1,5 +1,5 @@
 (* Dummy implementation of A1 *)
-(* open A0 *)
+open A0
 exception Not_implemented
 
 (* abstract syntax *)

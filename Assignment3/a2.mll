@@ -13,7 +13,7 @@
 
 let digit = ['0'-'9']
 let sign = ['+' '-']
-let integer = (sign)?('0' | (['1'-'9']digit*)) 
+let integer = ('-')?('0' | (['1'-'9']digit*)) 
 let unaryArithOp = "abs"
 let binaryArithOp = ['+' '-' '*' '/' '%' '^']
 let openingParantheses = '('
@@ -44,7 +44,6 @@ rule read = parse
    | '*'           {TIMES}
    | "div"         {DIV}
    | "mod"         {REM}
-   | '^'           {EXP}
    | '('           {LP}
    | '~'           {TILDA}
    | ')'           {RP}
