@@ -24,21 +24,10 @@ The language should contain the following types of expressions:  integers and bo
 */
 
 main:
-    expr EOF           {$1}
+    or_expr EOF        {$1}
   | EOF                { raise BadToken }
 ;
 
-expr:
-  boolInt     {$1}
-| conditional {$1}
-| tuple       {$1}
-| projection  {$1}
-;
-
-boolInt:
-  or_expr                     {$1}
-| comparison                  {$1}
-;
 or_expr:
   or_expr DISJ and_expr       {Disjunction($1, $3)}
 | and_expr                    {$1}
@@ -50,8 +39,8 @@ and_expr:
 ;
 
 not_expr:
-  NOT add_expr                {Not($2)}
-| add_expr                    {$1}
+  NOT comparison           {Not($2)}
+| comparison               {$1}
 ;
 
 comparison:
@@ -60,6 +49,7 @@ comparison:
 | add_expr GT add_expr     {GreaterT($1, $3)}
 | add_expr LT EQ add_expr  {LessTE($1, $4)}
 | add_expr LT add_expr     {LessT($1, $3)}
+| add_expr                 {$1}
 ;
 
 add_expr:
@@ -90,11 +80,32 @@ rem_expr:
 abs_neg_expr:
   ABS abs_neg_expr            {Abs($2)}
 | TILDA abs_neg_expr          {Negative($2)}
-| paren                       {$1}
+| conditional                 {$1}
+;
+
+conditional:
+  IF or_expr THEN or_expr ELSE or_expr FI {IfThenElse($2,$4,$6)}
+| projection                              {$1}
+;
+
+projection:
+  PROJ LP INT COMMA INT RP conditional {Project(($3,$5),$7)}
+| tuple                                {$1}
+;
+
+tuple:
+  LP RP                        {Tuple(0,[])}
+| LP tuple_exptree_list RP     {let x = $2 in Tuple(List.length x, x) }
+| paren                        {$1}
+;
+
+tuple_exptree_list:
+  or_expr COMMA or_expr               {$1::[$3]}
+| or_expr COMMA tuple_exptree_list    {$1::$3}
 ;
 
 paren:
-  LP expr  RP                 {InParen($2)} 
+  LP or_expr  RP              {InParen($2)} 
 | constant                    {$1}
 ;
 
@@ -104,23 +115,6 @@ constant:
 | ID                          {Var($1)}
 ;
 
-conditional:
-  IF boolInt THEN expr ELSE expr FI {IfThenElse($2,$4,$6)}
-;
-
-projection:
-  PROJ LP INT COMMA INT RP expr    {Project(($3,$5),$7)}
-;
-
-tuple:
-  LP RP                        {Tuple(0,[])}
-| LP tuple_exptree_list RP     {let x = $2 in Tuple(List.length x, x) }
-;
-
-tuple_exptree_list:
-  expr                          {[$1]}
-| expr COMMA tuple_exptree_list {$1::$3}
-;
 /* creation: 
   DEF ID EQ LP tuple RP    {Tuple($5)}
 ;

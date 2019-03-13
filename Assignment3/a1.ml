@@ -41,6 +41,9 @@ type opcode = VAR of string | NCONST of bigint | BCONST of bool | ABS | UNARYMIN
   | PLUS | MINUS | MULT | DIV | REM | CONJ | DISJ | EQS | GTE | LTE | GT | LT
   | PAREN | IFTE | TUPLE of int | PROJ of int*int
 
+  (* The type of value returned by the definitional interpreter. *)
+type value = NumVal of int | BoolVal of bool | TupVal of int * (value list)
+
 (* The language should contain the following types of expressions:  integers and booleans *)
 type answer = Num of bigint | Bool of bool | Tup of int * (answer list)
 
@@ -56,102 +59,102 @@ let rec evaluateProj list x =( match x with
 
 let rec eval ex rho = match ex with
                       Var(s)        -> rho s
-                    | N(i)          -> Num(mk_big i)
-                    | B(b)          -> Bool(b)
+                    | N(i)          -> NumVal(i)
+                    | B(b)          -> BoolVal(b)
                     
                     | Abs(t)        -> let a = eval t rho in
                                         (match a with
-                                        Num(i) -> Num(abs i)
+                                        NumVal(i) -> NumVal(Pervasives.abs i)
                                         | _     -> raise IllegalOperationOnWrongOperand)
                     
                     | Negative(t)   -> let a = eval t rho in
                                         (match a with
-                                        Num(i) -> Num(minus i)
+                                        NumVal(i) -> NumVal(-1*i)
                                         | _     -> raise IllegalOperationOnWrongOperand)
                     
                     | Not(t)        -> let a = eval t rho in
                                        (match a with
-                                        Bool(b) -> if b=true then Bool(false) else Bool(true)
+                                        BoolVal(b) -> if b=true then BoolVal(false) else BoolVal(true)
                                         | _     -> raise IllegalOperationOnWrongOperand)
                     
                     | Add(t1, t2)   -> let x = eval t1 rho in
                                        let y = eval t2 rho in
                                        (match (x,y) with
-                                        (Num(b1),Num(b2)) -> Num(add b1 b2)
+                                        (NumVal(b1),NumVal(b2)) -> NumVal(b1+b2)
                                        | _                -> raise IllegalOperationOnWrongOperand)
                     
                     | Sub(t1, t2)   -> let x = eval t1 rho in
                                        let y = eval t2 rho in
                                        (match (x,y) with
-                                        (Num(b1),Num(b2)) -> Num(sub b1 b2)
+                                        (NumVal(b1),NumVal(b2)) -> NumVal(b1-b2)
                                        | _                -> raise IllegalOperationOnWrongOperand)
                     
                     | Mult(t1, t2)  -> let x = eval t1 rho in
                                        let y = eval t2 rho in
                                        (match (x,y) with
-                                        (Num(b1),Num(b2)) -> Num(mult b1 b2)
+                                        (NumVal(b1),NumVal(b2)) -> NumVal(b1*b2)
                                        | _                -> raise IllegalOperationOnWrongOperand)
                     
                     | Div(t1, t2)   -> let x = eval t1 rho in
                                        let y = eval t2 rho in
                                        (match (x,y) with
-                                        (Num(b1),Num(b2)) -> Num(div b1 b2)
+                                        (NumVal(b1),NumVal(b2)) -> NumVal(b1/b2)
                                        | _                -> raise IllegalOperationOnWrongOperand) 
 
                     | Rem(t1, t2)   -> let x = eval t1 rho in
                                        let y = eval t2 rho in
                                        (match (x,y) with
-                                        (Num(b1),Num(b2)) -> Num(rem b1 b2)
+                                        (NumVal(b1),NumVal(b2)) -> NumVal(b1 mod b2)
                                        | _                -> raise IllegalOperationOnWrongOperand)
 
                     | Conjunction(t1, t2) ->  let x = eval t1 rho in
                                               let y = eval t2 rho in
                                               (match (x,y) with
-                                                (Bool(b1),Bool(b2)) -> Bool(b1 && b2)
+                                                (BoolVal(b1),BoolVal(b2)) -> BoolVal(b1 && b2)
                                               | _                   -> raise IllegalOperationOnWrongOperand)
 
                     | Disjunction(t1, t2) ->  let x = eval t1 rho in
                                               let y = eval t2 rho in
                                               (match (x,y) with
-                                                (Bool(b1),Bool(b2)) -> Bool(b1 || b2)
+                                                (BoolVal(b1),BoolVal(b2)) -> BoolVal(b1 || b2)
                                               | _                   -> raise IllegalOperationOnWrongOperand)
 
                     | Equals(t1, t2)      ->  let x = eval t1 rho in
                                               let y = eval t2 rho in
                                               (match (x,y) with
-                                                (Num(b1),Num(b2)) -> Bool(eq b1 b2)
+                                                (NumVal(b1),NumVal(b2)) -> BoolVal(b1=b2)
                                               | _                 -> raise IllegalOperationOnWrongOperand)
  
 
                     | GreaterTE(t1, t2)   ->  let x = eval t1 rho in
                                               let y = eval t2 rho in
                                               (match (x,y) with
-                                                (Num(b1),Num(b2)) -> Bool(geq b1 b2)
+                                                (NumVal(b1),NumVal(b2)) -> BoolVal(b1>=b2)
                                               | _                 -> raise IllegalOperationOnWrongOperand)
 
                     | LessTE(t1, t2)      ->  let x = eval t1 rho in
                                               let y = eval t2 rho in
                                               (match (x,y) with
-                                                (Num(b1),Num(b2)) -> Bool(leq b1 b2)
+                                                (NumVal(b1),NumVal(b2)) -> BoolVal(b1<=b2)
                                               | _                 -> raise IllegalOperationOnWrongOperand)
 
                     | GreaterT(t1, t2)    ->  let x = eval t1 rho in
                                               let y = eval t2 rho in
                                               (match (x,y) with
-                                                (Num(b1),Num(b2)) -> Bool(gt b1 b2)
+                                                (NumVal(b1),NumVal(b2)) -> BoolVal(b1>b2)
                                               | _                 -> raise IllegalOperationOnWrongOperand)
 
                     | LessT(t1, t2)       ->  let x = eval t1 rho in
                                               let y = eval t2 rho in
                                               (match (x,y) with
-                                                (Num(b1),Num(b2)) -> Bool(lt b1 b2)
+                                                (NumVal(b1),NumVal(b2)) -> BoolVal(b1<b2)
                                               | _                 -> raise IllegalOperationOnWrongOperand)
                     
                     | InParen(t1)         ->  eval t1 rho
 
                     | IfThenElse(t1, t2, t3) -> let a = eval t1 rho in
-                                                if a=Bool(true) then eval t2 rho
-                                                else if a=Bool(false) then eval t3 rho
+                                                if a=BoolVal(true) then eval t2 rho
+                                                else if a=BoolVal(false) then eval t3 rho
                                                 else raise IllegalOperationOnWrongOperand
                     
                     | Tuple(n, list)      -> let rec evaluateTuple l =(match l with
@@ -160,7 +163,7 @@ let rec eval ex rho = match ex with
                                              in
 
                                              let x = evaluateTuple list in
-                                             if (n= (List.length x)) then  Tup(n, x) else raise IllegalOperationOnWrongOperand
+                                             if (n= (List.length x)) then  TupVal(n, x) else raise IllegalOperationOnWrongOperand
 
 
                     | Project((i,n),t)    -> if(i<=0 || i>n) then raise IllegalProjection
@@ -169,7 +172,7 @@ let rec eval ex rho = match ex with
                                              let x = eval t rho in
 
                                              (match x with
-                                              Tup(a,e) -> if a=n then (evaluateProj e i) else raise IllegalTuple
+                                              TupVal(a,e) -> if a=n then (evaluateProj e i) else raise IllegalTuple
                                              |_        -> raise IllegalProjection)
 
                                                                      
