@@ -49,6 +49,7 @@ let rho s = match s with
    "X" -> NumVal 5
 |  "Y" -> BoolVal true
 |  "Z" -> TupVal (3, [NumVal 5; BoolVal true; NumVal 1])
+|  "TTrue" -> BoolVal true
 |   _  -> raise Not_Found
 
 let evaluate s = parser s rho

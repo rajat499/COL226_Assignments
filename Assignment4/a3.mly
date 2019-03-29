@@ -14,25 +14,27 @@
 %token <int> INT
 %token <bool> BOOL
 %token <string> ID
-%token ABS TILDA NOT PLUS MINUS TIMES DIV REM CONJ DISJ EQ GT LT LP RP IF THEN ELSE FI COMMA PROJ EOF DEF DELIMITER
-%start main
-%type <A1.exptree> main /* Return type */
+%token ABS TILDA NOT PLUS MINUS TIMES DIV REM CONJ DISJ EQ GT LT LP RP IF THEN ELSE FI COMMA PROJ
+LET IN END BACKSLASH DOT DEF SEMICOLON PARALLEL LOCAL EOF
+%start def_parser exp_parser
+%type <A1.definition> def_parser /* Returns definitions */
+%type <A1.exptree> exp_parser /* Returns expression */
 %%
-/*
-DESIGN a grammar for a simple expression language, taking care to enforce precedence rules (e.g., BODMAS)
-The language should contain the following types of expressions:  integers and booleans.
-*/
+/* The grammars written below are dummy. Please rewrite it as per the specifications. */
 
 /*The grammar is written as per the precedence rule:
 InParen > Tuple > Project > IfThenElse > (Negative = Abs) > (Div = Mult = Rem) > (Add = Sub) > (GreaterT = LessT = GreaterTE = LessTE = Equals) > Not > Conjunction > Disjunction
 Certain rules are enforced in grammar depending upon what kind of expression a token should parse.*/
-main:
+exp_parser:
     or_expr EOF        {$1}
   | EOF                { raise BadToken }
 ;
 
 or_expr:
-  or_expr DISJ and_expr       {Disjunction($1, $3)}
+  LET def IN or_expr END      {Let($2, $4)}
+| BACKSLASH ID DOT or_expr    {FunctionAbstraction($2, $4)}
+| or_expr LP or_expr RP       {FunctionCall($1, $3)}
+| or_expr DISJ and_expr       {Disjunction($1, $3)}
 | and_expr                    {$1}
 ;
 
@@ -116,5 +118,48 @@ constant:
   INT                         {N($1)}
 | BOOL                        {B($1)}
 | ID                          {Var($1)}
+;
+
+/* Implement the grammar rules for definitions, which may use the parser for expression  */
+def_parser:
+  def EOF { $1 }
+| EOF     {raise  BadToken}
+;
+
+def:
+  simple_def          {$1}
+| para_def            {$1}
+| seq_def             {$1}
+;
+
+seq_def:
+  sequence_def SEMICOLON simple_def {match $1 with 
+                                      Sequence(l1) -> Sequence(l1@[$3])
+                                      |_           -> Sequence($1::[$3])
+                                    }
+;
+
+sequence_def:
+ simple_def    {Sequence([$1])}
+|para_def      {$1}
+|sequence_def SEMICOLON simple_def  {let Sequence(l1) = $1 in Sequence(l1@[$3])}
+;
+
+para_def:
+  parallel_def PARALLEL simple_def {match $1 with 
+                                      Parallel(l1) -> Parallel(l1@[$3])
+                                      |_           -> Parallel($1::[$3])
+                                    }
+;
+
+parallel_def:
+ simple_def    {Parallel([$1])}
+|seq_def       {$1}
+|parallel_def PARALLEL simple_def  {let Parallel(l1) = $1 in Parallel(l1@[$3])}
+;
+
+simple_def:
+  DEF ID EQ or_expr           {Simple($2, $4)}
+| LOCAL def IN def END        {Local($2, $4)}
 ;
 

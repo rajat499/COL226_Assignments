@@ -1,5 +1,6 @@
 {
   open A3
+  exception Not_implemented
   exception Invalid_Token
 }
 
@@ -8,7 +9,8 @@
   - Tokens are defined in A3.mly
   - Return type is token and not token list
   - End of buffer is indicated by EOF token below
-  - There is no trailer. The scanner function is written in the wrapper file
+  - There is no trailer. The scanner function is written in the wrapper file (test_a4.ml)
+  - This is sample implementation. Please rewrite them as per the specifications
 *)
 (*Forming Regex for different Expressions.*)
 let digit = ['0'-'9']
@@ -54,11 +56,18 @@ rule read = parse
    | '='           {EQ}
    | '>'           {GT}
    | '<'           {LT}
+   | '\\'          {BACKSLASH}
+   | '.'           {DOT}
+   | ';'           {SEMICOLON}
    | "if"          {IF}
    | "then"        {THEN}
    | "else"        {ELSE}
    | "def"         {DEF}
-   | "$"           {DELIMITER}
+   | "let"         {LET}
+   | "end"         {END}
+   | "in"          {IN}
+   | "||"          {PARALLEL}
+   | "local"       {LOCAL}
    | "fi"          {FI}
    | id as x       {ID(x)}
    | integer as n  { INT (int_of_string n) }
