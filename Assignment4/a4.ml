@@ -4,6 +4,20 @@ exception TypeOfVariableNotFound
 exception BadType
 exception IllegalList
 
+let rec findInList x l = match l with
+                          [] -> false
+                         | hd::tl -> if((fst hd) = (fst x)) then true else (findInList x tl)
+
+(*Augments the list l1 on l2 *)
+let rec augment l1 l2 = match l2 with
+                         [] -> l1
+                        |hd::tl -> if(not(findInList hd l1)) then (hd::(augment l1 tl)) else (augment l1 tl) 
+
+(*Tells Whether two lists have intersection or not*)
+let rec hasIntersection l1 l2 = match l1 with
+                             [] -> false
+                             | hd::tl -> if(findInList hd l2) then true else (hasIntersection tl l2)
+
 (* hastype : ((string * exptype) list) -> exptree -> exptype -> bool *)
 (* let rec hastype g e t = raise Not_implemented *)
 
@@ -27,13 +41,16 @@ let rec getYield g d = match d with
                      Simple(s,e) -> [(s, (getType g e))]
                     |Parallel(l) -> (match l with 
                                     [] ->[]
-                                    |hd::tl -> let a = (getYield g hd) in ((getYield g (Parallel(tl))) @ a)  
+                                    |hd::tl -> let a = (getYield g hd) in 
+                                               let b = getYield g (Parallel(tl)) in
+                                               if(hasIntersection a b) then raise BadType
+                                               else (augment b a)  
                                     )
                     |Sequence(l) -> (match l with 
                                     [] ->[]
-                                   |hd::tl -> let a = (getYield g hd) in ((getYield (a@g) (Sequence(tl))) @ a) 
+                                   |hd::tl -> let a = (getYield g hd) in (augment (getYield (augment a g) (Sequence(tl))) a) 
                                     )
-                   |Local(d1,d2)-> getYield ((getYield g d1) @ g) d2
+                   |Local(d1,d2)-> getYield (augment (getYield g d1) g) d2
 
 (*Takes an exptree and a table gamma and tells the type of exptree.
 getType and getYield are two mutually recursive function.*)
@@ -61,13 +78,12 @@ and getType g e =  let rec tupleType t = (match t with [] -> []
                                           | InParen(t)          -> (getType g t)
                                           | IfThenElse(t1,t2,t3)-> let ty = (getType g t2) in if (((getType g t1) = Tbool) &&  ((getType g t3) = ty)) then ty else raise BadType
                                           | Tuple(n, x) -> Ttuple(tupleType x)
-                                          | Project((i,n), x) -> let Tuple(a,b) = x in 
-                                          let l = (tupleType b) in                                                         
-                                          if(n= (List.length l)) then (get_ith l i) else raise BadType
+                                          | Project((i,n), x) -> let Ttuple(l) = (getType g x) in                                                         
+                                                                if(n= (List.length l)) then (get_ith l i) else raise BadType
                                           | FunctionAbstraction(s, x) ->  let ty  = (giveType g s) in Tfunc(ty, getType g x)
                                           | FunctionCall (t1, t2) -> let x = (getType g t2) in
-                                          let Tfunc(y,z) = (getType g t1) in
-                                          if(y = x) then z else raise BadType 
+                                                                      let Tfunc(y,z) = (getType g t1) in
+                                                                      if(y = x) then z else raise BadType 
                                           | Let(d,x) ->let g_dash = (getYield g d) in (getType (g_dash @ g) x)
                                           )
                    
@@ -78,7 +94,7 @@ let rec hastype g e t =   try
                             | _ -> if (t = (getType g e)) then true else false
                           )
                           with BadType -> false
-                          | IllegalList -> false
+                          | _ -> false
  
 (*Takes two table and tells whether they are equivalent or not*)                          
 let rec compareExpTypeList l1 l2 = match l1 with
@@ -89,6 +105,11 @@ let rec compareExpTypeList l1 l2 = match l1 with
 obtained table is equivalent to gamma dash or not*)
 (* yields : ((string * exptype) list) -> definition -> ((string * exptype) list) -> bool *)
 let rec yields g d g_dash = try
-                            ( let g_prime = (getYield g d) in  (compareExpTypeList g_prime g_dash))
+                            ( let g_prime = (getYield g d) in  ((List.length g_prime) = (List.length g_dash))&&(compareExpTypeList g_prime g_dash))
                             with BadType -> false
-                            | IllegalList -> false  
+                            | _ -> false  
+
+
+
+(*It has been assumed that the variable in function abstraction will have a type in table. The first layer of function abstraction
+can derive the type of its variable for the type passed on to it to check. From second layer onwards it should have its type in table*)

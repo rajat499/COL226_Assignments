@@ -69,7 +69,14 @@ let g_dash = [("U", Tint); ("V", Tbool)];;
 assert(hastype g e t);;
 assert(yields g d g_dash);;
 
-
+let g = [("X", Tint); ("Y", Tbool); ("Z", Tfunc(Tint, Tbool)); ("W", Tfunc(Tbool, Tint))]
    let d1 = def_parser "def U = X" rho
    let d2 = def_parser "def U = X ; def V = W(Y)" rho
   let d3 = def_parser "def V = W(X)" rho
+
+  let e1 = exp_parser "let def A = Z(X) in W(A) end" rho
+  let e2 = exp_parser "\\M.(W(Z(M)))" rho
+
+  yields g d1 [("U", Tint)];;              (* should return true *)
+yields g d2 [("U", Tint); ("V", Tint)];; (* should return true *)
+yields g d3 [("V", Tint)];;              (* should return false because of failed type check *)
