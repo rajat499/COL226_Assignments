@@ -38,7 +38,7 @@ let rec get_ith list i = if(i<0) then (raise IllegalList) else
 (*Takes a table gamma and a definition d and returns the augment gamma'
 In case of Sequence gamma1[gamma2] is returned as well as in case of parallel*)
 let rec getYield g d = match d with
-                     Simple(s,e) -> [(s, (getType g e))]
+                     Simple(s,e,t) -> if ((getType g e) = t) then [(s,t)] else raise BadType
                     |Parallel(l) -> (match l with 
                                     [] ->[]
                                     |hd::tl -> let a = (getYield g hd) in 
@@ -80,7 +80,7 @@ and getType g e =  let rec tupleType t = (match t with [] -> []
                                           | Tuple(n, x) -> Ttuple(tupleType x)
                                           | Project((i,n), x) -> let Ttuple(l) = (getType g x) in                                                         
                                                                 if(n= (List.length l)) then (get_ith l i) else raise BadType
-                                          | FunctionAbstraction(s, x) ->  let ty  = (giveType g s) in Tfunc(ty, getType g x)
+                                          | FunctionAbstraction(s, x, t) -> Tfunc(t, getType (augment [(s,t)] g) x)
                                           | FunctionCall (t1, t2) -> let x = (getType g t2) in
                                                                       let Tfunc(y,z) = (getType g t1) in
                                                                       if(y = x) then z else raise BadType 
@@ -89,9 +89,7 @@ and getType g e =  let rec tupleType t = (match t with [] -> []
                    
 (*Takes a table gamma and expression e and type t and tells whether type of e is t or not*)
 let rec hastype g e t =   try
-                          ( match e with
-                              FunctionAbstraction(s,x) -> let Tfunc(t1, t2) = t in (getType ((s,t1)::g) x) = t2
-                            | _ -> if (t = (getType g e)) then true else false
+                          ( if (t = (getType g e)) then true else false
                           )
                           with BadType -> false
                           | _ -> false

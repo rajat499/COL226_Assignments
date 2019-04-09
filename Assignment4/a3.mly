@@ -16,9 +16,11 @@
 %token <string> ID
 %token ABS TILDA NOT PLUS MINUS TIMES DIV REM CONJ DISJ EQ GT LT LP RP IF THEN ELSE FI COMMA PROJ
 LET IN END BACKSLASH DOT DEF SEMICOLON PARALLEL LOCAL EOF
+TUNIT TINT TBOOL COLON GOESTO
 %start def_parser exp_parser
 %type <A1.definition> def_parser /* Returns definitions */
 %type <A1.exptree> exp_parser /* Returns expression */
+/* %type <A1.exptype> type_parser Returns exptype */
 %%
 /* The grammars written below are dummy. Please rewrite it as per the specifications. */
 
@@ -32,7 +34,7 @@ exp_parser:
 
 or_expr:
   LET def IN or_expr END      {Let($2, $4)}
-| BACKSLASH ID DOT or_expr    {FunctionAbstraction($2, $4)}
+| BACKSLASH ID COLON functionType DOT or_expr    {FunctionAbstraction($2, $6, $4)}
 | or_expr LP or_expr RP       {FunctionCall($1, $3)}
 | or_expr DISJ and_expr       {Disjunction($1, $3)}
 | and_expr                    {$1}
@@ -159,7 +161,28 @@ parallel_def:
 ;
 
 simple_def:
-  DEF ID EQ or_expr           {Simple($2, $4)}
-| LOCAL def IN def END        {Local($2, $4)}
+  DEF ID COLON functionType EQ or_expr           {Simple($2, $6, $4)}
+| LOCAL def IN def END                   {Local($2, $4)}
 ;
 
+functionType:
+  functionType GOESTO tupleType      {Tfunc($1, $3)}
+| tupleType                             {$1}
+;
+
+tupleType:
+  LP tupleTypeList RP   {Ttuple($2)}
+| simpletype            {$1}
+;
+
+tupleTypeList:
+  functionType TIMES functionType           {$1::[$3]}
+| functionType TIMES tupleTypeList  {$1::$3}
+;
+
+simpletype:
+  TINT        {Tint}
+| TBOOL       {Tbool}
+| TUNIT       {Tunit}
+| LP functionType RP {$2}
+;

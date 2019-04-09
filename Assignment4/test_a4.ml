@@ -27,7 +27,7 @@ let rec print_value tr = match tr with
   | _ -> raise Not_implemented
 ;;
 let rec print_def df = match df with
-  Simple(l,r) -> "def " ^ l ^ " = " ^ (print_tree r)
+  Simple(l,r,t) -> "def " ^ l ^ " = " ^ (print_tree r)
   | _ -> raise Not_implemented
 ;;
 
@@ -55,28 +55,69 @@ let rho s = match s with
 
 (* Sample parsing *)
 print_endline ( print_tree (exp_parser "5" rho));;
-print_endline ( print_def (def_parser "def A=5" rho));;
+print_endline ( print_def (def_parser "def A:Tint = 5" rho));;
 
 (* Sample test case *)
-let e = (exp_parser "\\X.Y" rho);;
+let e = (exp_parser "\\X:Tint.Y" rho);;
 let t = Tfunc (Tint, Tbool);;
 
 (* Type assumptions as a list of tuples of the form (variable name, type) *)
 let g = [("X", Tint); ("Y", Tbool); ("Z", Ttuple [Tint ; Tbool ; Tint]); ("W", Tfunc (Tint, Tbool))];;
-let d = (def_parser "def U = X ; def V = Y" rho);;
+let d = (def_parser "def U:Tint = X ; def V:Tbool = Y" rho);;
 let g_dash = [("U", Tint); ("V", Tbool)];;
 
 assert(hastype g e t);;
 assert(yields g d g_dash);;
 
-let g = [("X", Tint); ("Y", Tbool); ("Z", Tfunc(Tint, Tbool)); ("W", Tfunc(Tbool, Tint))]
-   let d1 = def_parser "def U = X" rho
-   let d2 = def_parser "def U = X ; def V = W(Y)" rho
-  let d3 = def_parser "def V = W(X)" rho
+let g = [("Y", Tbool)];;
 
-  let e1 = exp_parser "let def A = Z(X) in W(A) end" rho
-  let e2 = exp_parser "\\M.(W(Z(M)))" rho
+(* Explicit type declaration for function abstraction *)
+let e = exp_parser "\\X:Tint.X" rho;;
+let t = Tfunc(Tint, Tint);;
+hastype g e t;; (* should return true *)
 
-  yields g d1 [("U", Tint)];;              (* should return true *)
-yields g d2 [("U", Tint); ("V", Tint)];; (* should return true *)
-yields g d3 [("V", Tint)];;              (* should return false because of failed type check *)
+(* Types of both if-branches should match. *)
+let e = exp_parser "\\X:Tint.(if Y then X else T fi);;" rho;; 
+let t = Tfunc(Tint, Tbool);; 
+hastype g e t;; (* should be false, as the two branches do not have same type *)
+
+(* Explicit type declaration for definition. *) 
+let e = exp_parser "let def X:Tbool = Y in X end" rho;; 
+let t = Tbool;; 
+hastype g e t;; (* should return true *)
+
+(* Incorrect type declaration for definition. *) 
+let e = exp_parser "let def X:Tint = Y in X end" rho;; 
+let t = Tbool;; 
+hastype g e t;; (* should return false, as the claimed type of X is not possible w.r.t. type assumptions g *)
+
+(* Sequential composition of definitions. *) 
+let e = exp_parser "let def X:Tint = 3; def Z:Tint = 2*X in Z end" rho;; 
+let t = Tint;; 
+hastype g e t;; (* should return true *)
+
+(* Parallel composition of definitions. *) 
+let e = exp_parser "let def X:Tint = 3 || def Z:Tint = 2*X in Z end" rho;; 
+let t = Tint;; 
+hastype g e t;; (* should return false, as in second branch X is undefined *)
+(* assume that the set of variables in the two branches for parallel composition will be disjoint. *)
+
+(* Nested let bindings. *)
+let e = exp_parser "let def X:Tint = 3 in (let def X:Tbool = T in X end) end" rho;;
+let t = Tbool;;
+hastype g e t;; (* should return true *)
+
+(* More complicated type declarations *) 
+let e = exp_parser "let def Foo:Tint -> (Tint * Tbool) = \\X.(X,Y) in Foo(5) end" rho;; 
+let t = Ttuple(Tint, Tbool);; 
+hastype g e t;; (* should return true *)
+
+(* To support the following kind of type-checks, you could introduce a new constructor in the "type" datatype, say "TypeVar of string", which represents a named type variable and which could take any possible type. *) 
+let e = exp_parser "proj(1,2) if T then (3,T) else (4,F) fi" rho;; 
+let t = Tint;; 
+hastype g e t;; (* should return true *)
+
+(* You may have to implement some equation solving to handle such cases. *) 
+let e = exp_parser "proj(1,2) if Y then (3,Y) else (4,4) fi" rho;; 
+let t = Tint;; 
+hastype g e t;; (* should return false since the ifte expression forces one branch to be of type Ttuple(Tint, Tbool) and the other branch to be of type Ttuple(Tint, Tint *)

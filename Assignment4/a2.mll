@@ -41,6 +41,11 @@ rule read = parse
    | 'F'           {BOOL(false)}
    | "abs"         {ABS}
    | "proj"        {PROJ}
+   | ':'           {COLON}
+   | "->"          {GOESTO}
+   | "Tint"        {TINT}
+   | "Tbool"       {TBOOL}
+   | "Tunit"       {TUNIT}
    | ','           {COMMA}
    | '+'           {PLUS}
    | '-'           {MINUS}
