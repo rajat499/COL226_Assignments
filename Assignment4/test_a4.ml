@@ -77,7 +77,7 @@ let t = Tfunc(Tint, Tint);;
 hastype g e t;; (* should return true *)
 
 (* Types of both if-branches should match. *)
-let e = exp_parser "\\X:Tint.(if Y then X else T fi);;" rho;; 
+let e = exp_parser "\\X:Tint.(if Y then X else T fi)" rho;; 
 let t = Tfunc(Tint, Tbool);; 
 hastype g e t;; (* should be false, as the two branches do not have same type *)
 
@@ -108,8 +108,8 @@ let t = Tbool;;
 hastype g e t;; (* should return true *)
 
 (* More complicated type declarations *) 
-let e = exp_parser "let def Foo:Tint -> (Tint * Tbool) = \\X.(X,Y) in Foo(5) end" rho;; 
-let t = Ttuple(Tint, Tbool);; 
+let e = exp_parser "let def Foo:Tint -> (Tint * Tbool) = \\X:Tint.(X,Y) in Foo(5) end" rho;; 
+let t = Ttuple([Tint;Tbool]);; 
 hastype g e t;; (* should return true *)
 
 (* To support the following kind of type-checks, you could introduce a new constructor in the "type" datatype, say "TypeVar of string", which represents a named type variable and which could take any possible type. *) 

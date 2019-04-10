@@ -103,7 +103,7 @@ let rec compareExpTypeList l1 l2 = match l1 with
 obtained table is equivalent to gamma dash or not*)
 (* yields : ((string * exptype) list) -> definition -> ((string * exptype) list) -> bool *)
 let rec yields g d g_dash = try
-                            ( let g_prime = (getYield g d) in  ((List.length g_prime) = (List.length g_dash))&&(compareExpTypeList g_prime g_dash))
+                            ( let g_prime = (getYield g d) in (compareExpTypeList g_dash g_prime))
                             with BadType -> false
                             | _ -> false  
 
