@@ -92,7 +92,7 @@ conditional:
 ;
 
 func_call:
-  func_call LP func_abs RP    {App($1, $3)}
+  func_call LP or_expr RP    {App($1, $3)}
 | func_abs                    {$1}   
 ;
 
@@ -100,6 +100,7 @@ func_abs:
   BACKSLASH ID DOT func_abs   {Lambda($2, $4)}
 | paren                       {$1}
 ;
+
 paren:
   LP or_expr  RP              {InParen($2)} 
 | constant                    {$1}
