@@ -1,7 +1,7 @@
 exception InvalidReferenceInStack
 exception InvalidIndexInList
 exception NotFound
-exception CannotCall
+exception CannotCall of string
 
 let rec nth_in_list l n = if (n>0) then (match n with
                           |  1 -> List.hd l
@@ -32,7 +32,7 @@ type  exptree =
                 | Bool of bool     (* Boolean constant *);;
 
 type commands = Assign of string * exptree | FuncCall of (string * (exptree list)) | Return 
-                | CallableProc | CallingStack | StaticLinkChain | AccessibleVbls
+                | CallableProc | CallingStack | StaticLinkChain | AccessibleVbls | Exit
 
 exception InvalidFunctionName
 exception MainFunctionHasNoParent
@@ -85,7 +85,7 @@ let rec getStaticLink head b stack = let FuncName(a) = (nth_in_list stack head) 
                                      else if ((parentName b) = a) then head
                                      else (searchLatest (parentName b) stack (head - 5))
 
-exception RestrictedAccessToVariable
+exception RestrictedAccessToVariable of string
 let rec valueOfVariable x stack head = if head>=1 then
                                       (
                                         try(
@@ -102,7 +102,7 @@ let rec valueOfVariable x stack head = if head>=1 then
                                           with NotFound -> let StaticLink(n) = (nth_in_list stack (head-2)) in (valueOfVariable x stack n)
                                         )
                                       )
-                                      else raise RestrictedAccessToVariable
+                                      else raise (RestrictedAccessToVariable(x))
 
 let rec value x stack head = match x with
                             Integer(i) -> NumVal(i)
@@ -120,12 +120,12 @@ let getType a = match a with
                 NumVal(i) -> Tint
               | BoolVal(b) -> Tbool
 
-exception InvalidArguments
+exception InvalidArguments of string
 exception MainCannotBeCalled_PleaseReturnToMain
 
 let addFrames funcName argPassed stack head = let a = evalArgList argPassed (!stack) (!head) in
                                               if ((List.length argPassed !=2) || ((getType (nth_in_list a 1)) != Tint) || ((getType (nth_in_list a 2)) != Tint)) then
-                                                raise InvalidArguments
+                                                raise (InvalidArguments(funcName))
                                               else
                                               let staticLink = getStaticLink (!head) funcName (!stack) in
                                               head := (!head) + 5;
@@ -149,18 +149,18 @@ let returnProcedure stack head = if((!head)>1) then
                                     stack := first_n_elem (!stack) (n+1);
                                     head := n
                                   )
-                                  else ((print_string ("Returning from Main \n No More Execution Possible \n"));(stack:=[]; head:=(-1)))
+                                  else ((print_string ("Returning from Main \nNo More Execution Possible \n"));(stack:=[]; head:=(-1));exit 0)
 
 let callProcedure s l stack head = let FuncName(p) = (nth_in_list (!stack) (!head)) in
-                                    if (callable p s) then (addFrames s l stack head) else raise CannotCall
+                                    if (callable p s) then (addFrames s l stack head) else raise (CannotCall(s))
 
-exception TypeMisMatch
+exception TypeMisMatch of string
 let rec replace x a ty l = match l with
                         [] -> raise NotFound
-                      | (s,i,t)::tl -> if(s=x) then (if t=ty then (s,a,t)::tl else (raise TypeMisMatch))
+                      | (s,i,t)::tl -> if(s=x) then (if t=ty then (s,a,t)::tl else (raise (TypeMisMatch(x))))
                                     else (s,i,t)::(replace x a ty tl)
 
-let rec assign_variable x stack head a ty = if (!head <1) then raise RestrictedAccessToVariable
+let rec assign_variable x stack head a ty = if (!head <1) then raise (RestrictedAccessToVariable(x))
                                               else 
                                               (
                                                 try
@@ -177,8 +177,8 @@ let rec assign_variable x stack head a ty = if (!head <1) then raise RestrictedA
                                                                 ArgsList(l1) -> let l2 = replace x a ty l1 in
                                                                 stack := (first_n_elem (!stack) (!head-2)) @ [ArgsList(l2)] @ (last_n_elem (!stack) ((List.length !stack)-(!head)+1))
                                                               )
-                                                              with NotFound -> let StaticLink(n) = (nth_in_list !stack (!head - 2)) in
-                                                                                (assign_variable x stack (ref n) a ty)
+                                                              with NotFound -> try (let StaticLink(n) = (nth_in_list !stack (!head - 2)) in
+                                                                                (assign_variable x stack (ref n) a ty)) with _ -> raise (RestrictedAccessToVariable(x))
                                               )
 
 let assign x e stack head = let a = value e (!stack) (!head) in
@@ -218,14 +218,26 @@ let rec printList l n= if n > 0 then
                         printList l (n-5);
                       )
 
-let main comm = match comm with
-                Return -> returnProcedure stack head
-              | Assign(x,e) -> assign x e stack head
-              | FuncCall(s,l) -> callProcedure s l stack head
-              | CallableProc  -> let FuncName(s) = nth_in_list (!stack) (!head) in (callableProcedures s procedures)
-              | CallingStack -> printList (!stack) (!head)
-              | StaticLinkChain -> showStaticLinks (!stack) (!head)
-              | AccessibleVbls -> accessibleVbls (!stack) (!head) vbls_list
+let main comm = 
+              try
+              (
+                  match comm with
+                  Return -> returnProcedure stack head
+                | Assign(x,e) -> assign x e stack head
+                | FuncCall(s,l) -> callProcedure s l stack head
+                | CallableProc  -> let FuncName(s) = nth_in_list (!stack) (!head) in (callableProcedures s procedures)
+                | CallingStack -> printList (!stack) (!head)
+                | StaticLinkChain -> showStaticLinks (!stack) (!head)
+                | AccessibleVbls -> accessibleVbls (!stack) (!head) vbls_list
+                | Exit -> exit 0
+              )
+              with CannotCall(s) -> print_string ("Procedure"^s^" Cannot be called from current procedure\n")
+                 | RestrictedAccessToVariable(x) -> print_string ("Procedure"^x^" Cannot be called from current procedure\n")
+                 | TypeMisMatch(x) -> print_string ("Expression doesn't evaluate to type of Variable "^x^"\n")
+                 | InvalidArguments(x) -> print_string ("Number or type of parameters passed do not match for procedure "^x^"\n")
+                 
+
+                
 
 (*
   let head = ref 1
