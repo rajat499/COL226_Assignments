@@ -12,3 +12,4 @@ let _ =
             (* flush ensures that the evaluated information gets printed to stdout *)
             done
         with Lexer.Invalid_Token(s) -> print_string (String.make 1 s);exit 0
+           | Parsing.Parse_error -> print_string ("Parsing Error. Please type correct commands. Exiting.\n")

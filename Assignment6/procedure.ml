@@ -32,7 +32,7 @@ type  exptree =
                 | Bool of bool     (* Boolean constant *);;
 
 type commands = Assign of string * exptree | FuncCall of (string * (exptree list)) | Return 
-                | CallableProc | CallingStack | StaticLinkChain | AccessibleVbls | Exit
+                | CallableProc | CallingStack | StaticLinkChain | AccessibleVbls | Exit | CallingMain
 
 exception InvalidFunctionName
 exception MainFunctionHasNoParent
@@ -229,9 +229,10 @@ let main comm =
                 | CallingStack -> printList (!stack) (!head)
                 | StaticLinkChain -> showStaticLinks (!stack) (!head)
                 | AccessibleVbls -> accessibleVbls (!stack) (!head) vbls_list
+                | CallingMain -> print_string ("Trying to call out main. Restricted. You can only return back to main procedure. \n")
                 | Exit -> exit 0
               )
-              with CannotCall(s) -> print_string ("Procedure"^s^" Cannot be called from current procedure\n")
+              with CannotCall(s) -> print_string ("Procedure "^s^" Cannot be called from current procedure\n")
                  | RestrictedAccessToVariable(x) -> print_string ("Procedure"^x^" Cannot be called from current procedure\n")
                  | TypeMisMatch(x) -> print_string ("Expression doesn't evaluate to type of Variable "^x^"\n")
                  | InvalidArguments(x) -> print_string ("Number or type of parameters passed do not match for procedure "^x^"\n")
@@ -240,9 +241,153 @@ let main comm =
                 
 
 (*
-  let head = ref 1
-let stack = ref ([FuncName("main");LocalVblsList([("a",NumVal(0),Tint);("b",NumVal(0),Tint);("c",NumVal(0),Tint)])])
 
-  main (FuncCall("P",[Integer(8);Integer(5)]));;
-  main (FuncCall("Q",[Integer(8);Integer(5)]));;
+  ==> accessVbls;
+  Variable: a. Value: 0
+  Variable: b. Value: 0
+  Variable: c. Value: 0
+  ==> callingStack;
+  main
+  ==> a:=78;
+  ==> b:=9;
+  ==> call P(2,3,4);
+  Number or type of parameters passed do not match for procedure P
+  ==> call P(2,3,4);
+  Number or type of parameters passed do not match for procedure P
+  ==> call P(3,4);
+  ==> callingStack;
+  P
+  main
+  ==> accessVbls;
+  Variable: a. Value: 0
+  Variable: b. Value: 9
+  Variable: c. Value: 0
+  Variable: x. Value: 3
+  Variable: y. Value: 4
+  Variable: z. Value: 0
+  ==> callableProc;
+  P
+  Q
+  R
+  S
+  ==> staticLink;
+  main
+  ==> call main;
+  Trying to call out main. Restricted. You can only return back to main procedure. 
+  ==> call U(6,7);
+  Procedure U Cannot be called from current procedure
+  ==> call R(3,4);
+  ==> accessVbls;
+  Variable: a. Value: 0
+  Variable: b. Value: 0
+  Variable: c. Value: 0
+  Variable: w. Value: 3
+  Variable: x. Value: 3
+  Variable: y. Value: 4
+  Variable: z. Value: 0
+  Variable: i. Value: 4
+  Variable: j. Value: 0
+  ==> a:=90;
+  ==> accessVbls;
+  Variable: a. Value: 90
+  Variable: b. Value: 0
+  Variable: c. Value: 0
+  Variable: w. Value: 3
+  Variable: x. Value: 3
+  Variable: y. Value: 4
+  Variable: z. Value: 0
+  Variable: i. Value: 4
+  Variable: j. Value: 0
+  ==> return;
+  ==> accessVbls;
+  Variable: a. Value: 90
+  Variable: b. Value: 9
+  Variable: c. Value: 0
+  Variable: x. Value: 3
+  Variable: y. Value: 4
+  Variable: z. Value: 0
+  ==> return;
+  ==> accessVbls;
+  Variable: a. Value: 78
+  Variable: b. Value: 9
+  Variable: c. Value: 0
+  ==> callableProc;
+  P
+  Q
+  ==> call Q(78,67);
+  ==> accessVbls;
+  Variable: a. Value: 78
+  Variable: b. Value: 0
+  Variable: c. Value: 0
+  Variable: w. Value: 67
+  Variable: x. Value: 0
+  Variable: z. Value: 78
+  ==> callableProc;
+  P
+  Q
+  T
+  U
+  ==> call T(1,2);
+  ==> accessVbls;
+  Variable: a. Value: 1
+  Variable: b. Value: 0
+  Variable: c. Value: 0
+  Variable: w. Value: 67
+  Variable: x. Value: 0
+  Variable: y. Value: 2
+  Variable: z. Value: 78
+  Variable: i. Value: 0
+  Variable: f. Value: 0
+  ==> callableProc;
+  P
+  Q
+  T
+  U
+  W
+  ==> call W(40,50);
+  ==> accessVbls;
+  Variable: a. Value: 1
+  Variable: b. Value: 0
+  Variable: c. Value: 0
+  Variable: w. Value: 67
+  Variable: x. Value: 0
+  Variable: y. Value: 2
+  Variable: z. Value: 78
+  Variable: i. Value: 0
+  Variable: j. Value: 0
+  Variable: m. Value: 40
+  Variable: f. Value: 0
+  Variable: p. Value: 50
+  Variable: h. Value: 0
+  ==> callableProc;
+  P
+  Q
+  T
+  U
+  W
+  ==> staticLink;
+  T
+  Q
+  main
+  ==> call U(78,67);
+  ==> accessVbls;
+  Variable: a. Value: 78
+  Variable: b. Value: 0
+  Variable: c. Value: 78
+  Variable: w. Value: 67
+  Variable: x. Value: 0
+  Variable: z. Value: 67
+  Variable: p. Value: 0
+  Variable: g. Value: 0
+  ==> staticLink;
+  Q
+  main
+  ==> callingStack;
+  U
+  W
+  T
+  Q
+  main
+  ==> exit;
+  
 *)

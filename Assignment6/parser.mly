@@ -5,7 +5,7 @@
 %}
 
 %token EOF DELIMITER COLON LP RP TRUE FALSE EQ COMMA CALL RETURN EXIT
-       CALLINGSTACK CALLABLEPROC ACCESSIBLEVBLS STATICLINK
+       CALLINGSTACK CALLABLEPROC ACCESSIBLEVBLS STATICLINK MAIN
 %token <int> INT
 %token <string> ID
 %start main             /* the entry point */
@@ -33,6 +33,7 @@ assign:
 
 funcCall:
     CALL ID LP argList RP        {FuncCall($2,$4)}
+  | CALL MAIN                    {CallingMain}
 ;
 
 argList:

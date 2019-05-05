@@ -34,8 +34,8 @@ rule read = parse
    | ':'           {COLON}
    | '('           {LP}
    | ')'           {RP}
-   | 'T'           {TRUE}
-   | 'F'           {FALSE}
+   | "True"        {TRUE}
+   | "False"       {FALSE}
    | '='           {EQ}
    | ','           {COMMA}
    | "exit"        {EXIT}
@@ -45,6 +45,7 @@ rule read = parse
    | "callableProc" {CALLABLEPROC}
    | "accessVbls"  {ACCESSIBLEVBLS}
    | "staticLink"  {STATICLINK}
+   | "main"        {MAIN}
    | id as x       {ID(x)}
    | integer as n  { INT (int_of_string n) }
    | whitespace    {read lexbuf}
